@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#7f1d1d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="StarPOS">
+<title>StarPOS — ไก่ย่างห้าดาว</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+
+<!-- ═══════════════════════════════════════════════════
+     FIREBASE CONFIG — เปลี่ยนค่าด้านล่างด้วย config ของคุณ
+     ไปที่ console.firebase.google.com → Project Settings → Your apps
+     ═══════════════════════════════════════════════════ -->
+<script>
+const FIREBASE_CONFIG = {
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT.firebaseapp.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
+};
+
+// ═══════════════════════════════════════════════════
+// PAYMENT CONFIG — ตั้งค่าข้อมูลรับเงินของคุณ
+// ═══════════════════════════════════════════════════
+const PAYMENT_CONFIG = {
+  promptpay_number: "0XX-XXX-XXXX",   // เบอร์โทรหรือเลขบัตรประชาชน 13 หลัก
+  promptpay_name:   "ชื่อร้านไก่ย่างห้าดาว",
+  bank_accounts: [
+    { bank: "กสิกรไทย",    number: "xxx-x-xxxxx-x", name: "ชื่อเจ้าของ" },
+    { bank: "ไทยพาณิชย์", number: "xxx-xxxxxx-x",  name: "ชื่อเจ้าของ" },
+  ],
+  trial_days: 7,   // จำนวนวันทดลองใช้
+};
+</script>
+
+<style>
+:root{
+  --red:#b71c1c;--red2:#7f1d1d;--red-l:#fcebeb;
+  --green:#27ae60;--green-l:#eaf3de;--green-t:#1e8449;
+  --amber-l:#faeeda;--amber-t:#854f0b;
+  --blue-l:#e6f1fb;--blue-t:#185fa5;
+  --r:10px;--rs:7px;--sh:0 1px 4px rgba(0,0,0,.08)
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Sarabun',sans-serif;background:#f5f5f0;color:#1a1a18;min-height:100vh}
+button,input,select,textarea{font-family:inherit}
+
+/* pages */
+.pg{display:none;min-height:100vh;flex-direction:column}
+.pg.on{display:flex}
+
+/* topbar */
+.tb{background:var(--red2);color:#fff;padding:0 14px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:60}
+.tb h1{font-size:15px;font-weight:600}
+.tb-r{display:flex;align-items:center;gap:8px}
+.chip{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.18);padding:5px 11px;border-radius:20px;font-size:12px;cursor:pointer;border:none;color:#fff}
+
+/* bottom nav */
+.bnav{display:flex;background:#fff;border-top:1px solid #e8e8e3;flex-shrink:0;position:sticky;bottom:0;z-index:60}
+.bn{flex:1;padding:10px 0;font-size:11px;border:none;background:none;cursor:pointer;color:#aaa;display:flex;flex-direction:column;align-items:center;gap:3px;border-top:2px solid transparent}
+.bn i{font-size:20px}
+.bn.on{color:var(--red);border-top-color:var(--red)}
+
+/* content */
+.sc{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.sp{display:none;padding:12px 14px 90px}
+.sp.on{display:block}
+
+/* cards & layout */
+.card{background:#fff;border-radius:var(--r);box-shadow:var(--sh);padding:14px}
+.card+.card{margin-top:10px}
+.row{display:flex;align-items:center;gap:10px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sec{font-size:14px;font-weight:600;margin-bottom:10px;color:#1a1a18}
+
+/* form */
+.lbl{font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:4px}
+.inp{width:100%;padding:10px 12px;border:1.5px solid #ddd;border-radius:var(--rs);font-size:14px;outline:none;background:#fff;color:#1a1a18;-webkit-appearance:none}
+.inp:focus{border-color:var(--red)}
+.sel{width:100%;padding:10px 12px;border:1.5px solid #ddd;border-radius:var(--rs);font-size:14px;background:#fff;color:#1a1a18;outline:none;-webkit-appearance:none}
+.fg{margin-bottom:12px}
+
+/* buttons */
+.btn{padding:11px 18px;border:none;border-radius:var(--rs);font-size:14px;font-weight:600;cursor:pointer}
+.btn-r{background:var(--red);color:#fff}
+.btn-o{background:#fff;color:var(--red);border:1.5px solid var(--red)}
+.btn-g{background:#fff;color:#555;border:1.5px solid #ddd}
+.btn-full{width:100%}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn:active{opacity:.85;transform:scale(.97)}
+
+/* stat boxes */
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+.stat{background:#fff;border-radius:var(--r);padding:14px;box-shadow:var(--sh)}
+.stat-l{font-size:11px;color:#888;margin-bottom:3px}
+.stat-v{font-size:22px;font-weight:700}
+.stat-s{font-size:10px;color:#bbb;margin-top:1px}
+
+/* badge */
+.bdg{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700}
+.bdg-ok{background:var(--green-l);color:var(--green-t)}
+.bdg-lo{background:var(--amber-l);color:var(--amber-t)}
+.bdg-out{background:var(--red-l);color:var(--red)}
+.bdg-bl{background:var(--blue-l);color:var(--blue-t)}
+
+/* progress bar */
+.pbar{height:6px;background:#f0f0ec;border-radius:3px;overflow:hidden;margin:6px 0}
+.pfill{height:100%;border-radius:3px;transition:width .4s}
+
+/* menu grid */
+.mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mcard{background:#fff;border-radius:var(--r);padding:10px 7px;text-align:center;cursor:pointer;box-shadow:var(--sh);position:relative;transition:transform .1s}
+.mcard:active{transform:scale(.94)}
+.mcard.out{opacity:.4;pointer-events:none}
+.mem{font-size:24px;margin-bottom:5px}
+.mnm{font-size:11px;font-weight:600;line-height:1.3;margin-bottom:3px}
+.mpr{font-size:13px;font-weight:700;color:var(--red)}
+.mst{font-size:10px;color:#bbb;margin-top:2px}
+.mbdg{position:absolute;top:5px;right:5px;background:var(--red);color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center}
+
+/* cat tabs */
+.ctabs{display:flex;gap:7px;padding:10px 14px;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
+.ctabs::-webkit-scrollbar{display:none}
+.ctab{padding:7px 14px;border-radius:20px;border:1.5px solid #ddd;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;background:#fff;color:#888;flex-shrink:0}
+.ctab.on{background:var(--red);border-color:var(--red);color:#fff}
+
+/* FAB */
+.fab{position:fixed;bottom:72px;right:16px;background:var(--red);color:#fff;border:none;border-radius:28px;padding:12px 18px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(183,28,28,.35);z-index:50}
+.fab-cnt{background:#fff;color:var(--red);font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;border:2px solid var(--red)}
+
+/* drawer */
+.drw{position:fixed;inset:0;z-index:150;display:none}
+.drw.on{display:block}
+.drw-bg{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+.drw-pn{position:absolute;bottom:0;left:0;right:0;background:#fff;border-radius:16px 16px 0 0;max-height:88vh;display:flex;flex-direction:column;padding:0 16px 24px}
+.drw-hdl{width:36px;height:4px;background:#ddd;border-radius:2px;margin:12px auto 14px}
+
+/* cart rows */
+.crow{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #f0f0ec}
+.cnm{flex:1;font-size:13px;font-weight:600}
+.qc{display:flex;align-items:center;gap:6px}
+.qb{width:26px;height:26px;border:1.5px solid #ddd;border-radius:6px;background:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.qn{font-size:14px;font-weight:700;min-width:20px;text-align:center}
+.cpr{font-size:13px;font-weight:700;color:var(--red);min-width:52px;text-align:right}
+
+/* pay methods */
+.pmrow{display:flex;gap:8px;margin:10px 0}
+.pm{flex:1;padding:9px 5px;border:1.5px solid #ddd;border-radius:var(--rs);font-size:11px;font-weight:600;cursor:pointer;text-align:center;color:#888}
+.pm i{display:block;font-size:18px;margin-bottom:3px}
+.pm.on{border-color:var(--red);color:var(--red);background:var(--red-l)}
+
+/* sum */
+.sumrow{display:flex;justify-content:space-between;font-size:13px;color:#666;padding:3px 0}
+.sumrow.tot{font-size:17px;font-weight:700;color:#1a1a18;border-top:1px solid #eee;margin-top:5px;padding-top:8px}
+
+/* online shop */
+.shop-hero{background:var(--red2);color:#fff;padding:24px 16px;text-align:center}
+.shop-hero h2{font-size:20px;font-weight:700;margin-bottom:4px}
+.shop-hero p{font-size:12px;opacity:.75}
+.pgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.pcard{background:#fff;border-radius:var(--r);overflow:hidden;box-shadow:var(--sh)}
+.pimg{background:var(--red-l);height:100px;display:flex;align-items:center;justify-content:center;font-size:44px}
+.pinfo{padding:10px}
+.pnm{font-size:13px;font-weight:700;margin-bottom:2px}
+.ppr{font-size:15px;font-weight:700;color:var(--red)}
+.pst{font-size:10px;color:#aaa;margin-top:2px}
+.padd{width:100%;margin-top:8px;padding:8px;background:var(--red);color:#fff;border:none;border-radius:var(--rs);font-size:12px;font-weight:700;cursor:pointer}
+.padd:disabled{background:#ddd;color:#aaa}
+
+/* order status */
+.ordcard{background:#fff;border-radius:var(--r);padding:13px 14px;margin-bottom:8px;box-shadow:var(--sh)}
+.ord-h{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.ord-id{font-size:13px;font-weight:700}
+.ord-t{font-size:11px;color:#aaa;margin-top:2px}
+.ord-items{font-size:12px;color:#666;margin-bottom:8px}
+.ord-footer{display:flex;justify-content:space-between;align-items:center}
+.ord-total{font-size:15px;font-weight:700;color:var(--red)}
+
+/* stock item */
+.sitem{background:#fff;border-radius:var(--r);padding:13px 14px;margin-bottom:8px;box-shadow:var(--sh)}
+.si-r1{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.si-nm{font-size:13px;font-weight:700}
+.si-r2{display:flex;justify-content:space-between;align-items:center}
+.si-nums{font-size:11px;color:#888}
+.si-inp{width:65px;padding:5px 8px;border:1.5px solid #ddd;border-radius:var(--rs);font-size:13px;font-weight:700;text-align:center;background:#fff;color:#1a1a18;outline:none}
+
+/* incentive */
+.incbox{background:linear-gradient(135deg,var(--red2),var(--red));color:#fff;border-radius:var(--r);padding:16px;margin-bottom:14px}
+.incbox-lbl{font-size:11px;opacity:.8;margin-bottom:3px}
+.incbox-val{font-size:28px;font-weight:700}
+.incbox-sub{font-size:11px;opacity:.7;margin-top:3px}
+.inc-prog{height:6px;background:rgba(255,255,255,.25);border-radius:3px;margin-top:10px}
+.inc-fill{height:100%;background:#ffd600;border-radius:3px}
+
+/* bill row */
+.bill{background:#fff;border-radius:var(--rs);padding:11px 13px;margin-bottom:7px;box-shadow:var(--sh);display:flex;justify-content:space-between;align-items:center}
+.bill-l .bt{font-size:11px;color:#aaa}
+.bill-l .bd{font-size:12px;color:#666;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bill-r{font-size:15px;font-weight:700;color:var(--red)}
+
+/* leaderboard */
+.lbitem{background:#fff;border-radius:var(--r);padding:13px 14px;margin-bottom:8px;box-shadow:var(--sh);display:flex;align-items:center;gap:12px}
+.lbrank{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.lbav{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.lbnm{font-size:13px;font-weight:700}
+.lbmeta{font-size:11px;color:#aaa;margin-top:2px}
+.lbright{text-align:right;margin-left:auto}
+.lbsales{font-size:15px;font-weight:700;color:var(--red)}
+.lbinc{font-size:11px;color:#aaa}
+
+/* login */
+.loginwrap{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--red2);padding:20px}
+.logincard{background:#fff;border-radius:16px;padding:24px 20px;width:100%;max-width:340px}
+.loginhdr{text-align:center;margin-bottom:20px}
+.loginhdr .emo{font-size:44px}
+.loginhdr h2{font-size:18px;font-weight:700;margin-top:6px}
+.loginhdr p{font-size:12px;color:#888;margin-top:3px}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.sc2{border:1.5px solid #e8e8e3;border-radius:var(--r);padding:12px 8px;text-align:center;cursor:pointer}
+.sc2:active{transform:scale(.95)}
+.sav{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;margin:0 auto 6px}
+.snm{font-size:12px;font-weight:600}
+.srl{font-size:10px;color:#aaa;margin-top:2px}
+.div-txt{text-align:center;font-size:11px;color:#bbb;margin:10px 0;position:relative}
+.div-txt::before,.div-txt::after{content:'';position:absolute;top:50%;width:38%;height:1px;background:#eee}
+.div-txt::before{left:0}.div-txt::after{right:0}
+.obtn{width:100%;padding:11px;background:#fff;border:1.5px solid #ddd;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;color:#555;display:flex;align-items:center;justify-content:center;gap:8px}
+
+/* PIN */
+.pinov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.pinov.on{display:flex}
+.pinbox{background:#fff;border-radius:16px;padding:22px 20px;width:100%;max-width:300px}
+.pinbox h3{text-align:center;font-size:15px;font-weight:700;margin-bottom:14px}
+.pindots{display:flex;justify-content:center;gap:10px;height:36px;align-items:center;margin-bottom:6px}
+.pdot{width:13px;height:13px;border-radius:50%;background:#ddd;transition:background .1s}
+.pdot.on{background:var(--red)}
+.pinerr{color:var(--red);font-size:11px;text-align:center;min-height:16px;margin-bottom:8px}
+.pinpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pk{padding:13px;border:1.5px solid #e8e8e3;border-radius:var(--rs);background:#fff;font-size:18px;font-weight:600;cursor:pointer;text-align:center}
+.pk:active{background:#f5f5f0;transform:scale(.93)}
+.pk.del{color:var(--red);font-size:13px}
+.pincancel{width:100%;margin-top:12px;padding:10px;border:none;background:none;color:#bbb;font-size:13px;cursor:pointer}
+
+/* modal */
+.mov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:none;align-items:flex-end;justify-content:center}
+.mov.on{display:flex}
+.mbox{background:#fff;border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto}
+.mbox h3{font-size:16px;font-weight:700;margin-bottom:14px}
+.mbtns{display:flex;gap:8px;margin-top:14px}
+.mbtns button{flex:1;padding:11px;border-radius:var(--rs);font-size:14px;font-weight:600;cursor:pointer}
+
+/* toast */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1a1a18;color:#fff;padding:10px 20px;border-radius:24px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.on{opacity:1}
+
+/* loading */
+.loading{position:fixed;inset:0;background:var(--red2);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;z-index:500}
+.loading.hide{display:none}
+.loading p{color:#fff;font-size:14px;opacity:.8}
+.spin{width:40px;height:40px;border:3px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* online shop cart badge */
+.shop-cart-btn{position:fixed;bottom:72px;right:16px;background:var(--red);color:#fff;border:none;border-radius:28px;padding:12px 18px;font-size:13px;font-weight:700;cursor:pointer;display:none;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(183,28,28,.35);z-index:50}
+
+/* ── PAYMENT MODAL ── */
+.pay-modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:400;display:none;align-items:flex-end;justify-content:center}
+.pay-modal.on{display:flex}
+.pay-panel{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;padding:20px 18px 36px}
+.pay-steps{display:flex;margin-bottom:20px}
+.pstep{flex:1;text-align:center;font-size:11px;color:#bbb;position:relative}
+.pstep.on{color:var(--red);font-weight:700}
+.pstep.done{color:var(--green);font-weight:700}
+.pstep-dot{width:26px;height:26px;border-radius:50%;background:#f0f0ec;margin:0 auto 5px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;color:#aaa;position:relative;z-index:1}
+.pstep.on .pstep-dot{background:var(--red);color:#fff}
+.pstep.done .pstep-dot{background:var(--green);color:#fff}
+.pstep-line{position:absolute;top:13px;left:50%;width:100%;height:2px;background:#f0f0ec;z-index:0}
+.pstep:last-child .pstep-line{display:none}
+.pstep.done .pstep-line{background:var(--green)}
+.qr-box{background:#f9f9f7;border-radius:var(--r);padding:16px;text-align:center;margin:12px 0}
+.qr-img{width:180px;height:180px;background:#fff;border:2px solid #e8e8e3;border-radius:var(--rs);margin:0 auto 10px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.qr-img img{width:100%;height:100%;object-fit:contain}
+.qr-amount{font-size:26px;font-weight:700;color:var(--red);margin-bottom:2px}
+.qr-ppname{font-size:13px;color:#555;font-weight:600}
+.qr-ppnum{font-size:14px;color:#1a1a18;font-weight:700;margin-top:3px;font-family:monospace;letter-spacing:1px}
+.copy-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border:1.5px solid #ddd;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;background:#fff;margin-top:6px;color:#555}
+.bank-opt{border:1.5px solid #e8e8e3;border-radius:var(--rs);padding:12px 14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all .15s}
+.bank-opt.sel{border-color:var(--red);background:var(--red-l)}
+.bank-logo{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.bank-details .bd-bank{font-size:13px;font-weight:700}
+.bank-details .bd-no{font-family:monospace;font-size:14px;letter-spacing:1px;margin-top:2px;color:#1a1a18}
+.bank-details .bd-name{font-size:11px;color:#888;margin-top:1px}
+.slip-zone{border:2px dashed #ddd;border-radius:var(--rs);padding:24px 16px;text-align:center;cursor:pointer;position:relative;transition:all .2s}
+.slip-zone:hover{border-color:var(--red);background:var(--red-l)}
+.slip-zone.has-img{border-style:solid;border-color:var(--green);background:var(--green-l)}
+.slip-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.slip-preview{max-width:100%;max-height:180px;border-radius:var(--rs);display:block;margin:10px auto 0;object-fit:contain}
+.pmt-tabs{display:flex;gap:8px;margin-bottom:16px}
+.pmt-tab{flex:1;padding:12px 8px;border:1.5px solid #ddd;border-radius:var(--rs);background:#fff;font-size:12px;font-weight:700;cursor:pointer;text-align:center;color:#888;display:flex;flex-direction:column;align-items:center;gap:5px;transition:all .15s}
+.pmt-tab i{font-size:22px}
+.pmt-tab.on{border-color:var(--red);color:var(--red);background:var(--red-l)}
+.trial-banner{background:linear-gradient(135deg,#7f1d1d,#b71c1c);color:#fff;border-radius:var(--r);padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;gap:14px}
+.trial-days-big{font-size:40px;font-weight:700;line-height:1;flex-shrink:0}
+.trial-txt .t1{font-size:14px;font-weight:700}
+.trial-txt .t2{font-size:11px;opacity:.8;margin-top:3px;line-height:1.5}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading" id="loading">
+  <div style="font-size:48px">🍗</div>
+  <div class="spin"></div>
+  <p id="load-txt">กำลังเชื่อมต่อ Firebase...</p>
+</div>
+
+<!-- ===================== APP PAGES ===================== -->
+
+<!-- LOGIN PAGE -->
+<div class="pg" id="pg-login">
+  <div class="loginwrap">
+    <div class="logincard">
+      <div class="loginhdr">
+        <div class="emo">🍗</div>
+        <h2>StarPOS</h2>
+        <p>เลือกพนักงาน แล้วกรอก PIN</p>
+      </div>
+      <div class="sgrid" id="staff-grid"></div>
+      <div class="div-txt">หรือ</div>
+      <button class="obtn" onclick="openPin('owner')">
+        <i class="ti ti-crown" aria-hidden="true"></i> เข้าสู่ระบบเจ้าของ
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="pg" id="pg-app">
+  <div class="tb">
+    <div>
+      <div style="font-size:10px;opacity:.7">StarPOS</div>
+      <h1 id="tb-title">จุดขาย</h1>
+    </div>
+    <div class="tb-r">
+      <span id="tb-time" style="font-size:11px;opacity:.7"></span>
+      <button class="chip" id="user-chip" onclick="logout()">
+        <i class="ti ti-user" style="font-size:14px" aria-hidden="true"></i>
+        <span id="chip-name">-</span>
+        <i class="ti ti-logout" style="font-size:12px;opacity:.7" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="sc" id="main-sc">
+    <!-- POS -->
+    <div class="sp on" id="sp-pos">
+      <div class="ctabs" id="cat-tabs"></div>
+      <div class="mgrid" id="menu-grid" style="padding:0 14px"></div>
+    </div>
+    <!-- MY SALES -->
+    <div class="sp" id="sp-my"></div>
+    <!-- STOCK -->
+    <div class="sp" id="sp-stock"></div>
+    <!-- OWNER -->
+    <div class="sp" id="sp-owner"></div>
+    <!-- ONLINE SHOP (customer view) -->
+    <div class="sp" id="sp-shop"></div>
+    <!-- ORDERS (owner view) -->
+    <div class="sp" id="sp-orders"></div>
+  </div>
+
+  <div class="bnav" id="bnav">
+    <button class="bn on" id="bn-pos" onclick="sw('pos',this)"><i class="ti ti-shopping-cart" aria-hidden="true"></i>POS</button>
+    <button class="bn" id="bn-my" onclick="sw('my',this)"><i class="ti ti-chart-line" aria-hidden="true"></i>ยอดฉัน</button>
+    <button class="bn" id="bn-stock" onclick="sw('stock',this)"><i class="ti ti-package" aria-hidden="true"></i>สต๊อก</button>
+    <button class="bn" id="bn-shop" onclick="sw('shop',this)"><i class="ti ti-world" aria-hidden="true"></i>ออนไลน์</button>
+    <button class="bn" id="bn-owner" onclick="sw('owner',this)" style="display:none"><i class="ti ti-crown" aria-hidden="true"></i>เจ้าของ</button>
+    <button class="bn" id="bn-orders" onclick="sw('orders',this)" style="display:none"><i class="ti ti-clipboard-list" aria-hidden="true"></i>ออเดอร์</button>
+  </div>
+</div>
+
+<!-- ONLINE SHOP (public, no login) -->
+<div class="pg" id="pg-shop">
+  <div class="shop-hero">
+    <div style="font-size:36px;margin-bottom:6px">🍗</div>
+    <h2>ไก่ย่างห้าดาว</h2>
+    <p>สั่งออนไลน์ · รับหน้าร้านหรือจัดส่ง</p>
+  </div>
+  <div style="padding:14px">
+    <div class="pgrid" id="shop-grid"></div>
+    <div style="height:80px"></div>
+  </div>
+  <button class="shop-cart-btn" id="shop-cart-btn" onclick="openShopCart()">
+    <i class="ti ti-shopping-cart" aria-hidden="true"></i>
+    ตะกร้า <span class="fab-cnt" id="shop-cart-cnt">0</span>
+  </button>
+  <div style="padding:14px;text-align:center">
+    <button class="btn btn-g btn-sm" onclick="showPage('login')">เจ้าหน้าที่เข้าระบบ →</button>
+  </div>
+</div>
+
+<!-- SHOP CHECKOUT DRAWER -->
+<div class="drw" id="shop-drw">
+  <div class="drw-bg" onclick="closeShopCart()"></div>
+  <div class="drw-pn">
+    <div class="drw-hdl"></div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:12px">สั่งซื้อออนไลน์</div>
+    <div id="shop-cart-items" style="overflow-y:auto;max-height:200px"></div>
+    <div style="border-top:1px solid #eee;padding-top:10px;margin-top:8px" id="shop-cart-sum"></div>
+    <div class="fg" style="margin-top:12px"><label class="lbl">ชื่อผู้สั่ง</label><input class="inp" id="oc-name" placeholder="ชื่อ-นามสกุล"></div>
+    <div class="fg"><label class="lbl">เบอร์โทร</label><input class="inp" id="oc-phone" type="tel" placeholder="08x-xxx-xxxx"></div>
+    <div class="fg">
+      <label class="lbl">รับสินค้าแบบ</label>
+      <select class="sel" id="oc-type">
+        <option value="pickup">รับหน้าร้าน</option>
+        <option value="delivery">จัดส่ง (+฿30)</option>
+      </select>
+    </div>
+    <div class="fg" id="oc-addr-wrap" style="display:none">
+      <label class="lbl">ที่อยู่จัดส่ง</label>
+      <textarea class="inp" id="oc-addr" rows="2" placeholder="บ้านเลขที่ ซอย ถนน แขวง เขต"></textarea>
+    </div>
+    <button class="btn btn-r btn-full" onclick="placeOrder()">ยืนยันสั่งซื้อ</button>
+  </div>
+</div>
+
+<!-- CART DRAWER (POS) -->
+<div class="drw" id="pos-drw">
+  <div class="drw-bg" onclick="closePosCart()"></div>
+  <div class="drw-pn">
+    <div class="drw-hdl"></div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between">
+      <span>รายการสั่ง</span>
+      <button onclick="clearCart()" style="border:none;background:none;font-size:12px;color:#bbb;cursor:pointer">ล้าง</button>
+    </div>
+    <div id="pos-cart-items" style="overflow-y:auto;flex:1;max-height:220px"></div>
+    <div style="border-top:1px solid #eee;padding-top:10px;margin-top:8px" id="pos-cart-sum"></div>
+    <div class="pmrow">
+      <div class="pm on" id="pm-cash" onclick="setPM('cash')"><i class="ti ti-cash" aria-hidden="true"></i>เงินสด</div>
+      <div class="pm" id="pm-qr" onclick="setPM('qr')"><i class="ti ti-qrcode" aria-hidden="true"></i>QR/โอน</div>
+      <div class="pm" id="pm-card" onclick="setPM('card')"><i class="ti ti-credit-card" aria-hidden="true"></i>บัตร</div>
+    </div>
+    <div id="cash-section">
+      <div class="fg"><label class="lbl">รับเงินมา (บาท)</label><input class="inp" type="number" id="cash-inp" placeholder="0" oninput="updateChange()"></div>
+      <div style="text-align:center;font-size:13px;color:#666">เงินทอน <span id="change-disp" style="font-size:20px;font-weight:700;color:var(--green)">฿0</span></div>
+    </div>
+    <button class="btn btn-r btn-full" style="margin-top:12px" id="pay-btn" onclick="confirmPay()">ชำระเงิน</button>
+  </div>
+</div>
+
+<!-- ADD/EDIT MENU MODAL -->
+<div class="mov" id="menu-modal">
+  <div class="mbox">
+    <h3 id="mm-title">เพิ่มเมนู</h3>
+    <input type="hidden" id="mm-id">
+    <div class="row2">
+      <div class="fg"><label class="lbl">Emoji</label><input class="inp" id="mm-emoji" placeholder="🍗" maxlength="2"></div>
+      <div class="fg"><label class="lbl">ชื่อ</label><input class="inp" id="mm-name" placeholder="ชื่อสินค้า"></div>
+    </div>
+    <div class="row2">
+      <div class="fg"><label class="lbl">ราคา (฿)</label><input class="inp" type="number" id="mm-price" placeholder="0"></div>
+      <div class="fg"><label class="lbl">หมวดหมู่</label><input class="inp" id="mm-cat" placeholder="ไก่ย่าง"></div>
+    </div>
+    <div class="row2">
+      <div class="fg"><label class="lbl">สต๊อกเริ่มต้น</label><input class="inp" type="number" id="mm-stock" placeholder="0"></div>
+      <div class="fg"><label class="lbl">สต๊อกสูงสุด</label><input class="inp" type="number" id="mm-max" placeholder="0"></div>
+    </div>
+    <div class="fg">
+      <label class="lbl">ขายออนไลน์ด้วย</label>
+      <select class="sel" id="mm-online"><option value="true">ใช่</option><option value="false">ไม่</option></select>
+    </div>
+    <div class="mbtns">
+      <button class="btn btn-g" onclick="closeModal('menu-modal')">ยกเลิก</button>
+      <button class="btn btn-r" onclick="saveMenu()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD STAFF MODAL -->
+<div class="mov" id="staff-modal">
+  <div class="mbox">
+    <h3>เพิ่มพนักงาน</h3>
+    <div class="fg"><label class="lbl">ชื่อ</label><input class="inp" id="sm-name" placeholder="ชื่อพนักงาน"></div>
+    <div class="row2">
+      <div class="fg"><label class="lbl">PIN (4 หลัก)</label><input class="inp" type="number" id="sm-pin" placeholder="1234" maxlength="4"></div>
+      <div class="fg"><label class="lbl">อินเซนทีฟ %</label><input class="inp" type="number" id="sm-rate" value="3" step="0.5"></div>
+    </div>
+    <div class="mbtns">
+      <button class="btn btn-g" onclick="closeModal('staff-modal')">ยกเลิก</button>
+      <button class="btn btn-r" onclick="saveStaff()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- PIN OVERLAY -->
+<div class="pinov" id="pin-ov">
+  <div class="pinbox">
+    <h3 id="pin-title">กรอก PIN</h3>
+    <div class="pindots" id="pindots">
+      <div class="pdot"></div><div class="pdot"></div>
+      <div class="pdot"></div><div class="pdot"></div>
+    </div>
+    <div class="pinerr" id="pin-err"></div>
+    <div class="pinpad">
+      <button class="pk" onclick="pk('1')">1</button>
+      <button class="pk" onclick="pk('2')">2</button>
+      <button class="pk" onclick="pk('3')">3</button>
+      <button class="pk" onclick="pk('4')">4</button>
+      <button class="pk" onclick="pk('5')">5</button>
+      <button class="pk" onclick="pk('6')">6</button>
+      <button class="pk" onclick="pk('7')">7</button>
+      <button class="pk" onclick="pk('8')">8</button>
+      <button class="pk" onclick="pk('9')">9</button>
+      <button class="pk" onclick="pk('c')" style="font-size:11px;color:#aaa">ล้าง</button>
+      <button class="pk" onclick="pk('0')">0</button>
+      <button class="pk del" onclick="pk('d')"><i class="ti ti-backspace" aria-hidden="true"></i></button>
+    </div>
+    <button class="pincancel" onclick="closePin()">ยกเลิก</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ════════════════════════════════════════
+     PAYMENT MODAL (QR PromptPay + โอนบัญชี)
+     ════════════════════════════════════════ -->
+<div class="pay-modal" id="pay-modal">
+  <div class="pay-panel">
+    <!-- step indicators -->
+    <div class="pay-steps" id="pay-steps"></div>
+
+    <!-- STEP 1: เลือกวิธีชำระ -->
+    <div id="pay-s1">
+      <div style="font-size:16px;font-weight:700;margin-bottom:4px">ชำระเงินออนไลน์</div>
+      <div style="font-size:12px;color:#888;margin-bottom:16px">เลือกวิธีที่สะดวก</div>
+      <div id="pay-total-disp" style="font-size:24px;font-weight:700;color:var(--red);text-align:center;margin-bottom:16px;padding:14px;background:#f9f9f7;border-radius:var(--rs)"></div>
+      <div class="pmt-tabs">
+        <button class="pmt-tab on" id="pmt-qr" onclick="setPayTab('qr')">
+          <i class="ti ti-qrcode" aria-hidden="true"></i>QR PromptPay
+        </button>
+        <button class="pmt-tab" id="pmt-bank" onclick="setPayTab('bank')">
+          <i class="ti ti-building-bank" aria-hidden="true"></i>โอนบัญชี
+        </button>
+      </div>
+      <!-- QR section -->
+      <div id="qr-section">
+        <div class="qr-box">
+          <div class="qr-img" id="qr-img-wrap">
+            <div style="text-align:center;color:#aaa">
+              <div style="font-size:32px">📱</div>
+              <div style="font-size:11px;margin-top:4px">กำลังสร้าง QR...</div>
+            </div>
+          </div>
+          <div class="qr-amount" id="qr-amount-disp">฿0</div>
+          <div class="qr-ppname" id="qr-pp-name">-</div>
+          <div class="qr-ppnum" id="qr-pp-num">-</div>
+          <button class="copy-btn" onclick="copyPP()">
+            <i class="ti ti-copy" style="font-size:13px" aria-hidden="true"></i> คัดลอกเบอร์ PromptPay
+          </button>
+        </div>
+        <div style="background:#fffbe6;border:1px solid #ffe066;border-radius:var(--rs);padding:10px 12px;font-size:12px;color:#7a5c00;line-height:1.6">
+          <b>วิธีสแกน:</b> เปิดแอพธนาคาร → สแกน QR Code → ตรวจสอบชื่อและยอดเงิน → ยืนยันโอน
+        </div>
+      </div>
+      <!-- Bank transfer section -->
+      <div id="bank-section" style="display:none">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px">เลือกบัญชีที่จะโอน</div>
+        <div id="bank-list"></div>
+        <div id="bank-detail-box" style="display:none;background:#f9f9f7;border-radius:var(--rs);padding:14px;margin-top:8px;text-align:center">
+          <div style="font-size:12px;color:#888;margin-bottom:4px">โอนมาที่บัญชี</div>
+          <div id="bank-selected-name" style="font-size:15px;font-weight:700;color:#1a1a18"></div>
+          <div id="bank-selected-no" style="font-size:22px;font-weight:700;color:var(--red);letter-spacing:2px;margin:4px 0;font-family:monospace"></div>
+          <div id="bank-selected-acct" style="font-size:12px;color:#888"></div>
+          <button class="copy-btn" onclick="copyBankNo()">
+            <i class="ti ti-copy" style="font-size:13px" aria-hidden="true"></i> คัดลอกเลขบัญชี
+          </button>
+        </div>
+      </div>
+      <button class="btn btn-r btn-full" style="margin-top:16px" onclick="goPayStep(2)">
+        โอนแล้ว → แนบสลิปถัดไป <i class="ti ti-arrow-right" aria-hidden="true"></i>
+      </button>
+      <button class="btn btn-g btn-full" style="margin-top:8px" onclick="closePayModal()">ยกเลิก</button>
+    </div>
+
+    <!-- STEP 2: แนบสลิป -->
+    <div id="pay-s2" style="display:none">
+      <div style="font-size:16px;font-weight:700;margin-bottom:4px">แนบหลักฐานการโอน</div>
+      <div style="font-size:12px;color:#888;margin-bottom:14px">ถ่ายรูปสลิปหรือ screenshot หน้าจอยืนยันการโอน</div>
+      <div class="slip-zone" id="slip-zone" onclick="document.getElementById('slip-file').click()">
+        <input type="file" id="slip-file" accept="image/*" capture="environment" onchange="handleSlip(this)">
+        <div id="slip-placeholder">
+          <i class="ti ti-camera" style="font-size:36px;color:#bbb" aria-hidden="true"></i>
+          <div style="font-size:13px;color:#aaa;margin-top:8px">แตะเพื่อถ่ายรูปหรืออัปโหลดสลิป</div>
+          <div style="font-size:11px;color:#ccc;margin-top:4px">รองรับ JPG, PNG</div>
+        </div>
+        <img id="slip-img-preview" class="slip-preview" style="display:none">
+      </div>
+      <div class="fg" style="margin-top:14px"><label class="lbl">หมายเหตุ (ถ้ามี)</label><input class="inp" id="slip-note" placeholder="เช่น โอนจากธนาคารกสิกร"></div>
+      <button class="btn btn-r btn-full" style="margin-top:10px" id="slip-submit-btn" onclick="submitSlip()">
+        <i class="ti ti-check" aria-hidden="true"></i> ส่งหลักฐานการชำระเงิน
+      </button>
+      <button class="btn btn-g btn-full" style="margin-top:8px" onclick="goPayStep(1)">
+        <i class="ti ti-arrow-left" aria-hidden="true"></i> กลับ
+      </button>
+    </div>
+
+    <!-- STEP 3: รอยืนยัน -->
+    <div id="pay-s3" style="display:none;text-align:center;padding:20px 0">
+      <div style="font-size:56px;margin-bottom:14px">✅</div>
+      <div style="font-size:18px;font-weight:700;margin-bottom:6px">ส่งหลักฐานแล้ว!</div>
+      <div style="font-size:13px;color:#888;line-height:1.7;margin-bottom:20px">ทีมงานจะตรวจสอบและยืนยันออเดอร์<br>ภายใน 5–15 นาที · แจ้งผลทางโทรศัพท์</div>
+      <div id="pay-order-summary" style="background:#f9f9f7;border-radius:var(--r);padding:14px;text-align:left;margin-bottom:16px;font-size:13px"></div>
+      <button class="btn btn-r btn-full" onclick="closePayModal()">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== FIREBASE + APP LOGIC ===================== -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, doc, addDoc, setDoc, updateDoc, deleteDoc,
+         onSnapshot, query, orderBy, serverTimestamp, increment, getDoc }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+// ── init ──────────────────────────────────────────────────────────
+const app = initializeApp(FIREBASE_CONFIG);
+const db  = getFirestore(app);
+
+// ── helpers ───────────────────────────────────────────────────────
+const fmt  = n => Number(n||0).toLocaleString('th-TH');
+const now  = () => new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});
+const $    = id => document.getElementById(id);
+const qs   = s  => document.querySelector(s);
+const COLORS = ['#b71c1c','#1565c0','#2e7d32','#6a1b9a','#e65100','#00695c'];
+const initials = n => (n||'?').slice(0,2);
+
+function toast(msg) {
+  const t=$('toast'); t.textContent=msg; t.classList.add('on');
+  setTimeout(()=>t.classList.remove('on'),2500);
+}
+function closeModal(id){ $(id).classList.remove('on'); }
+function openModal(id) { $(id).classList.add('on'); }
+function setLoad(show,txt=''){
+  $('loading').classList.toggle('hide',!show);
+  if(txt) $('load-txt').textContent=txt;
+}
+
+// ── state ─────────────────────────────────────────────────────────
+let CU=null; // current user
+let MENU=[]; let STAFF=[]; let SALES=[]; let ORDERS=[];
+let cart={}; let ocart={}; // pos cart, online cart
+let curCat='ทั้งหมด'; let payMethod='cash';
+let pinTarget=null; let pinBuf='';
+let ownerTab='ranking'; let incTarget=5000;
+let unsubFns=[];
+
+// ── Firestore realtime listeners ──────────────────────────────────
+function startListeners(){
+  unsubFns.forEach(u=>u());
+  unsubFns=[];
+
+  // MENU
+  unsubFns.push(onSnapshot(collection(db,'menu'), snap=>{
+    MENU=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderPOS(); renderShop(); renderShopPublic();
+    if(CU?.role==='owner') renderOwner();
+  }));
+
+  // STAFF
+  unsubFns.push(onSnapshot(collection(db,'staff'), snap=>{
+    STAFF=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderLoginGrid();
+    if(CU?.role==='owner') renderOwner();
+  }));
+
+  // SALES (today)
+  const today = new Date(); today.setHours(0,0,0,0);
+  unsubFns.push(onSnapshot(
+    query(collection(db,'sales'), orderBy('createdAt','desc')), snap=>{
+    SALES=snap.docs.map(d=>({id:d.id,...d.data()}));
+    if(CU) renderMySales();
+    if(CU?.role==='owner') renderOwner();
+  }));
+
+  // ORDERS
+  unsubFns.push(onSnapshot(
+    query(collection(db,'orders'), orderBy('createdAt','desc')), snap=>{
+    ORDERS=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderShopPublic();
+    if(CU?.role==='owner') renderOrdersPage();
+  }));
+}
+
+// ── seed default menu if empty ────────────────────────────────────
+async function seedMenuIfEmpty(){
+  const snap = await getDoc(doc(db,'_meta','seeded'));
+  if(snap.exists()) return;
+  const defaults=[
+    {name:'ไก่ย่างทั้งตัว',price:180,emoji:'🍗',cat:'ไก่ย่าง',stock:15,max:20,online:true},
+    {name:'ไก่ย่างครึ่งตัว',price:100,emoji:'🍗',cat:'ไก่ย่าง',stock:28,max:40,online:true},
+    {name:'ไก่ย่างชิ้น',price:45,emoji:'🍗',cat:'ไก่ย่าง',stock:60,max:80,online:true},
+    {name:'ปีกไก่',price:35,emoji:'🍖',cat:'ไก่ย่าง',stock:45,max:60,online:true},
+    {name:'น่องไก่',price:40,emoji:'🍖',cat:'ไก่ย่าง',stock:38,max:60,online:false},
+    {name:'ข้าวเหนียว',price:10,emoji:'🍚',cat:'ข้าว',stock:200,max:300,online:false},
+    {name:'ข้าวสวย',price:10,emoji:'🍚',cat:'ข้าว',stock:150,max:200,online:false},
+    {name:'น้ำจิ้มซีอิ๊ว',price:10,emoji:'🥫',cat:'น้ำจิ้ม',stock:50,max:80,online:false},
+    {name:'น้ำจิ้มแจ่ว',price:10,emoji:'🌶️',cat:'น้ำจิ้ม',stock:40,max:80,online:false},
+    {name:'ส้มตำ',price:60,emoji:'🥗',cat:'เมนูเสริม',stock:20,max:30,online:true},
+    {name:'น้ำเปล่า',price:10,emoji:'💧',cat:'เครื่องดื่ม',stock:100,max:150,online:true},
+    {name:'น้ำอัดลม',price:20,emoji:'🥤',cat:'เครื่องดื่ม',stock:48,max:72,online:true},
+    {name:'ชาเย็น',price:25,emoji:'🧋',cat:'เครื่องดื่ม',stock:30,max:60,online:true},
+  ];
+  for(const m of defaults) await addDoc(collection(db,'menu'),m);
+  // seed owner staff
+  const ownerSnap = await getDoc(doc(db,'staff','owner'));
+  if(!ownerSnap.exists()){
+    await setDoc(doc(db,'staff','owner'),{name:'เจ้าของ',pin:'0000',role:'owner',color:'#7f1d1d',active:true,incRate:0});
+  }
+  await setDoc(doc(db,'_meta','seeded'),{at:serverTimestamp()});
+}
+
+// ── auth / login ──────────────────────────────────────────────────
+function showPage(name){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));
+  $(name==='shop'?'pg-shop':'pg-'+name).classList.add('on');
+}
+
+function renderLoginGrid(){
+  const g=$('staff-grid'); if(!g) return;
+  const active=STAFF.filter(s=>s.active&&s.role!=='owner');
+  g.innerHTML=active.map(s=>`
+    <div class="sc2" onclick="openPin('${s.id}')">
+      <div class="sav" style="background:${s.color}">${initials(s.name)}</div>
+      <div class="snm">${s.name}</div>
+      <div class="srl">พนักงาน</div>
+    </div>`).join('');
+  window.openPin=openPin;
+}
+
+function openPin(targetId){
+  pinTarget=targetId; pinBuf='';
+  const s=targetId==='owner'?{name:'เจ้าของร้าน'}:STAFF.find(x=>x.id===targetId);
+  $('pin-title').textContent=(s?.name||'?')+' — กรอก PIN';
+  $('pin-err').textContent='';
+  updatePinDots();
+  $('pin-ov').classList.add('on');
+}
+function closePin(){ $('pin-ov').classList.remove('on'); pinBuf=''; }
+function updatePinDots(){
+  document.querySelectorAll('.pdot').forEach((d,i)=>d.classList.toggle('on',i<pinBuf.length));
+}
+window.pk=function(k){
+  $('pin-err').textContent='';
+  if(k==='d') pinBuf=pinBuf.slice(0,-1);
+  else if(k==='c') pinBuf='';
+  else if(pinBuf.length<4) pinBuf+=k;
+  updatePinDots();
+  if(pinBuf.length===4) setTimeout(()=>checkPin(),120);
+};
+async function checkPin(){
+  let user=null;
+  if(pinTarget==='owner'){
+    const ownerDoc=await getDoc(doc(db,'staff','owner'));
+    if(ownerDoc.exists()&&ownerDoc.data().pin===pinBuf) user={id:'owner',...ownerDoc.data()};
+  } else {
+    const s=STAFF.find(x=>x.id===pinTarget);
+    if(s&&s.pin===pinBuf) user=s;
+  }
+  if(user){ closePin(); loginAs(user); }
+  else { $('pin-err').textContent='PIN ไม่ถูกต้อง'; pinBuf=''; updatePinDots(); }
+}
+function loginAs(user){
+  CU=user; cart={};
+  $('chip-name').textContent=user.name;
+  const isOwner=user.role==='owner';
+  $('bn-owner').style.display=isOwner?'flex':'none';
+  $('bn-orders').style.display=isOwner?'flex':'none';
+  showPage('app');
+  sw('pos', $('bn-pos'));
+}
+function logout(){ CU=null; cart={}; showPage('login'); renderLoginGrid(); }
+
+// ── tab switching ─────────────────────────────────────────────────
+const TABS={pos:'จุดขาย (POS)',my:'ยอดขายของฉัน',stock:'สต๊อกสินค้า',shop:'ร้านออนไลน์',owner:'แผงเจ้าของ',orders:'จัดการออเดอร์'};
+window.sw=function(tab,btn){
+  document.querySelectorAll('.sp').forEach(s=>s.classList.remove('on'));
+  document.querySelectorAll('.bn').forEach(b=>b.classList.remove('on'));
+  $('sp-'+tab).classList.add('on');
+  if(btn) btn.classList.add('on');
+  $('tb-title').textContent=TABS[tab]||'StarPOS';
+  const fab=$('pos-fab');
+  if(fab) fab.style.display=tab==='pos'?'flex':'none';
+  if(tab==='pos') renderPOS();
+  else if(tab==='my') renderMySales();
+  else if(tab==='stock') renderStockPage();
+  else if(tab==='shop') renderShop();
+  else if(tab==='owner') renderOwner();
+  else if(tab==='orders') renderOrdersPage();
+};
+
+// ── POS ──────────────────────────────────────────────────────────
+function renderPOS(){
+  const cats=['ทั้งหมด',...new Set(MENU.map(m=>m.cat))];
+  $('cat-tabs').innerHTML=cats.map(c=>
+    `<button class="ctab${c===curCat?' on':''}" onclick="setCat('${c}')">${c}</button>`
+  ).join('');
+  const items=curCat==='ทั้งหมด'?MENU:MENU.filter(m=>m.cat===curCat);
+  $('menu-grid').innerHTML=items.map(m=>`
+    <div class="mcard${m.stock<=0?' out':''}" onclick="addToCart('${m.id}')">
+      <div class="mem">${m.emoji}</div>
+      <div class="mnm">${m.name}</div>
+      <div class="mpr">฿${fmt(m.price)}</div>
+      <div class="mst">${m.stock<=0?'หมด':m.stock<5?`เหลือ ${m.stock}`:`${m.stock} ชิ้น`}</div>
+      ${(cart[m.id]||0)>0?`<div class="mbdg">${cart[m.id]}</div>`:''}
+    </div>`).join('');
+  // FAB
+  let fab=$('pos-fab');
+  if(!fab){
+    fab=document.createElement('button');
+    fab.id='pos-fab'; fab.className='fab';
+    fab.innerHTML=`<i class="ti ti-shopping-cart" aria-hidden="true"></i> ตะกร้า <span class="fab-cnt" id="cart-cnt">0</span>`;
+    fab.onclick=openPosCart;
+    $('pg-app').appendChild(fab);
+  }
+  $('cart-cnt').textContent=cartCount();
+  fab.style.display='flex';
+}
+window.setCat=function(c){curCat=c;renderPOS();};
+window.addToCart=function(id){
+  const m=MENU.find(x=>x.id===id); if(!m||m.stock<=0) return;
+  if((cart[id]||0)>=m.stock){toast('สต๊อกไม่พอ');return;}
+  cart[id]=(cart[id]||0)+1; renderPOS();
+};
+function cartCount(){ return Object.values(cart).reduce((s,v)=>s+v,0); }
+function cartTotal(){ return Object.entries(cart).reduce((s,[id,q])=>{const m=MENU.find(x=>x.id===id);return s+(m?m.price*q:0);},0); }
+
+function openPosCart(){
+  renderPosCartDrawer();
+  $('pos-drw').classList.add('on');
+}
+window.closePosCart=function(){ $('pos-drw').classList.remove('on'); };
+window.clearCart=function(){ cart={}; renderPOS(); renderPosCartDrawer(); };
+
+function renderPosCartDrawer(){
+  const entries=Object.entries(cart);
+  const list=$('pos-cart-items');
+  if(!entries.length){list.innerHTML='<div style="text-align:center;padding:20px;color:#bbb;font-size:13px">ยังไม่มีรายการ</div>';
+  } else {
+    list.innerHTML=entries.map(([id,q])=>{
+      const m=MENU.find(x=>x.id===id); if(!m) return'';
+      return`<div class="crow">
+        <div class="cnm">${m.name}</div>
+        <div class="qc">
+          <button class="qb" onclick="chgQ('${id}',-1)">−</button>
+          <span class="qn">${q}</span>
+          <button class="qb" onclick="chgQ('${id}',1)">+</button>
+        </div>
+        <div class="cpr">฿${fmt(m.price*q)}</div>
+      </div>`;}).join('');
+  }
+  const tot=cartTotal(); const vat=Math.round(tot*.07); const grand=tot+vat;
+  $('pos-cart-sum').innerHTML=`
+    <div class="sumrow"><span>รวม</span><span>฿${fmt(tot)}</span></div>
+    <div class="sumrow"><span>VAT 7%</span><span>฿${fmt(vat)}</span></div>
+    <div class="sumrow tot"><span>ยอดรวม</span><span>฿${fmt(grand)}</span></div>`;
+  $('pay-btn').textContent=`ชำระเงิน ฿${fmt(grand)}`;
+  $('cash-inp').value=grand;
+  updateChange();
+}
+window.chgQ=function(id,d){
+  cart[id]=(cart[id]||0)+d;
+  if(cart[id]<=0) delete cart[id];
+  renderPOS(); renderPosCartDrawer();
+};
+window.setPM=function(m){
+  payMethod=m;
+  ['cash','qr','card'].forEach(x=>$('pm-'+x).classList.toggle('on',x===m));
+  $('cash-section').style.display=m==='cash'?'':'none';
+};
+window.updateChange=function(){
+  const recv=parseFloat($('cash-inp').value)||0;
+  const tot=cartTotal(); const grand=tot+Math.round(tot*.07);
+  const ch=recv-grand;
+  $('change-disp').textContent=ch>=0?`฿${fmt(Math.round(ch))}`:'ไม่พอ';
+  $('change-disp').style.color=ch>=0?'var(--green)':'var(--red)';
+};
+window.confirmPay=async function(){
+  if(!cartCount()){toast('ไม่มีรายการ');return;}
+  const tot=cartTotal(); const grand=tot+Math.round(tot*.07);
+  const items=Object.entries(cart).map(([id,q])=>{const m=MENU.find(x=>x.id===id);return{name:m.name,qty:q,price:m.price};});
+  // save sale to Firestore
+  await addDoc(collection(db,'sales'),{
+    staffId:CU.id, staffName:CU.name,
+    items, subtotal:tot, vat:Math.round(tot*.07), total:grand,
+    payMethod, createdAt:serverTimestamp()
+  });
+  // deduct stock
+  for(const [id,q] of Object.entries(cart)){
+    await updateDoc(doc(db,'menu',id),{stock:increment(-q)});
+  }
+  cart={}; closePosCart(); renderPOS();
+  toast(`✓ ชำระ ฿${fmt(grand)} บันทึกแล้ว`);
+};
+
+// ── MY SALES ─────────────────────────────────────────────────────
+function renderMySales(){
+  const sp=$('sp-my'); if(!sp) return;
+  const mySales=SALES.filter(s=>s.staffId===CU?.id);
+  const total=mySales.reduce((s,b)=>s+b.total,0);
+  const staffDoc=STAFF.find(x=>x.id===CU?.id)||CU;
+  const rate=staffDoc?.incRate||0;
+  const inc=Math.round(total*rate/100);
+  const pct=Math.min(100,Math.round(total/incTarget*100));
+  sp.innerHTML=`
+    <div style="background:linear-gradient(135deg,var(--red2),var(--red));color:#fff;border-radius:var(--r);padding:16px;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        <div style="width:48px;height:48px;border-radius:50%;background:${staffDoc?.color||'#b71c1c'};border:3px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:#fff">${initials(CU?.name)}</div>
+        <div><div style="font-size:17px;font-weight:700">${CU?.name}</div><div style="font-size:12px;opacity:.75">${mySales.length} บิลวันนี้</div></div>
+      </div>
+    </div>
+    <div class="incbox">
+      <div class="incbox-lbl">อินเซนทีฟสะสม (${rate}% จากยอดขาย)</div>
+      <div class="incbox-val">฿${fmt(inc)}</div>
+      <div class="incbox-sub">จากยอดขาย ฿${fmt(total)} · เป้า ฿${fmt(incTarget)}</div>
+      <div class="inc-prog"><div class="inc-fill" style="width:${pct}%"></div></div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-l">ยอดขายวันนี้</div><div class="stat-v" style="color:var(--red)">฿${fmt(total)}</div></div>
+      <div class="stat"><div class="stat-l">จำนวนบิล</div><div class="stat-v">${mySales.length}</div></div>
+      <div class="stat"><div class="stat-l">เฉลี่ย/บิล</div><div class="stat-v">฿${mySales.length?fmt(Math.round(total/mySales.length)):0}</div></div>
+      <div class="stat"><div class="stat-l">คืบหน้า</div><div class="stat-v">${pct}%</div></div>
+    </div>
+    <div class="sec">ประวัติบิล</div>
+    ${mySales.length?mySales.map(b=>`
+      <div class="bill">
+        <div class="bill-l">
+          <div class="bt">${b.createdAt?.toDate?b.createdAt.toDate().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}):now()}</div>
+          <div class="bd">${b.items.map(i=>`${i.name}×${i.qty}`).join(', ')}</div>
+        </div>
+        <div class="bill-r">฿${fmt(b.total)}</div>
+      </div>`).join('')
+    :'<div style="text-align:center;padding:24px;color:#bbb;font-size:13px">ยังไม่มีบิล</div>'}`;
+}
+
+// ── STOCK ─────────────────────────────────────────────────────────
+function renderStockPage(){
+  const sp=$('sp-stock'); if(!sp) return;
+  const isOwner=CU?.role==='owner';
+  sp.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="sec" style="margin:0">สต๊อกสินค้า</div>
+      ${isOwner?`<div style="display:flex;gap:8px">
+        <button class="btn btn-g btn-sm" onclick="resetAllStock()"><i class="ti ti-refresh" aria-hidden="true"></i> เติมทั้งหมด</button>
+        <button class="btn btn-r btn-sm" onclick="openMenuModal()"><i class="ti ti-plus" aria-hidden="true"></i> เพิ่มเมนู</button>
+      </div>`:''}
+    </div>
+    ${MENU.map(m=>{
+      const pct=m.max>0?Math.round(m.stock/m.max*100):0;
+      const fill=pct<=0?'var(--red)':pct<25?'#e67e22':'var(--green)';
+      const bdg=pct<=0?'bdg-out':pct<25?'bdg-lo':'bdg-ok';
+      const lbl=pct<=0?'หมด':pct<25?'ใกล้หมด':'ปกติ';
+      return`<div class="sitem">
+        <div class="si-r1">
+          <div class="si-nm">${m.emoji} ${m.name}</div>
+          <span class="bdg ${bdg}">${lbl}</span>
+        </div>
+        <div class="pbar"><div class="pfill" style="width:${pct}%;background:${fill}"></div></div>
+        <div class="si-r2">
+          <div class="si-nums">${m.stock} / ${m.max} (${pct}%)</div>
+          ${isOwner
+            ? `<div style="display:flex;gap:6px;align-items:center">
+                <input class="si-inp" type="number" value="${m.stock}" min="0"
+                  onchange="updStock('${m.id}',this.value)">
+                <button class="btn btn-g btn-sm" onclick="openMenuModal('${m.id}')"><i class="ti ti-edit" aria-hidden="true"></i></button>
+               </div>`
+            : `<span style="font-size:12px;color:#aaa">${m.stock}</span>`}
+        </div>
+      </div>`;
+    }).join('')}`;
+}
+window.updStock=async function(id,v){
+  await updateDoc(doc(db,'menu',id),{stock:Math.max(0,parseInt(v)||0)});
+  toast('บันทึกสต๊อกแล้ว');
+};
+window.resetAllStock=async function(){
+  for(const m of MENU) await updateDoc(doc(db,'menu',m.id),{stock:m.max});
+  toast('เติมสต๊อกทั้งหมดแล้ว');
+};
+
+// menu modal
+window.openMenuModal=function(id){
+  $('mm-id').value=id||'';
+  if(id){
+    const m=MENU.find(x=>x.id===id);
+    if(!m) return;
+    $('mm-title').textContent='แก้ไขเมนู';
+    $('mm-emoji').value=m.emoji; $('mm-name').value=m.name;
+    $('mm-price').value=m.price; $('mm-cat').value=m.cat;
+    $('mm-stock').value=m.stock; $('mm-max').value=m.max;
+    $('mm-online').value=m.online?'true':'false';
+  } else {
+    $('mm-title').textContent='เพิ่มเมนู';
+    ['mm-emoji','mm-name','mm-price','mm-cat','mm-stock','mm-max'].forEach(f=>$(f).value='');
+    $('mm-online').value='true';
+  }
+  openModal('menu-modal');
+};
+window.saveMenu=async function(){
+  const id=$('mm-id').value;
+  const data={
+    emoji:$('mm-emoji').value||'🍗',
+    name:$('mm-name').value.trim(),
+    price:parseFloat($('mm-price').value)||0,
+    cat:$('mm-cat').value.trim()||'อื่นๆ',
+    stock:parseInt($('mm-stock').value)||0,
+    max:parseInt($('mm-max').value)||0,
+    online:$('mm-online').value==='true'
+  };
+  if(!data.name){toast('กรุณากรอกชื่อสินค้า');return;}
+  if(id) await updateDoc(doc(db,'menu',id),data);
+  else await addDoc(collection(db,'menu'),data);
+  closeModal('menu-modal'); toast('บันทึกเมนูแล้ว');
+};
+
+// ── ONLINE SHOP (staff internal view) ────────────────────────────
+function renderShop(){
+  const sp=$('sp-shop'); if(!sp) return;
+  const onlineMenu=MENU.filter(m=>m.online);
+  sp.innerHTML=`
+    <div class="card" style="margin-bottom:12px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:4px">ลิงก์ร้านออนไลน์สาธารณะ</div>
+      <div style="font-size:12px;color:#888;margin-bottom:8px">ส่งลิงก์นี้ให้ลูกค้าสั่งออนไลน์</div>
+      <div style="background:#f5f5f0;border-radius:var(--rs);padding:10px;font-size:12px;font-family:monospace;word-break:break-all;margin-bottom:8px" id="shop-url">${location.href.split('#')[0]}#shop</div>
+      <button class="btn btn-o btn-sm" onclick="copyShopLink()"><i class="ti ti-copy" aria-hidden="true"></i> คัดลอกลิงก์</button>
+    </div>
+    <div class="sec">สินค้าออนไลน์ (${onlineMenu.length} รายการ)</div>
+    <div class="pgrid">
+      ${onlineMenu.map(m=>`
+        <div class="pcard">
+          <div class="pimg">${m.emoji}</div>
+          <div class="pinfo">
+            <div class="pnm">${m.name}</div>
+            <div class="ppr">฿${fmt(m.price)}</div>
+            <div class="pst">${m.stock>0?`คงเหลือ ${m.stock}`:'หมด'}</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+window.copyShopLink=function(){
+  const url=location.href.split('#')[0]+'#shop';
+  navigator.clipboard?.writeText(url).then(()=>toast('คัดลอกลิงก์แล้ว')).catch(()=>toast(url));
+};
+
+// ── ONLINE SHOP PUBLIC ────────────────────────────────────────────
+function renderShopPublic(){
+  const g=$('shop-grid'); if(!g) return;
+  const onlineMenu=MENU.filter(m=>m.online);
+  g.innerHTML=onlineMenu.map(m=>`
+    <div class="pcard">
+      <div class="pimg">${m.emoji}</div>
+      <div class="pinfo">
+        <div class="pnm">${m.name}</div>
+        <div class="ppr">฿${fmt(m.price)}</div>
+        <div class="pst">${m.stock>0?`เหลือ ${m.stock}`:'หมด'}</div>
+        <button class="padd" ${m.stock<=0?'disabled':''} onclick="addOCart('${m.id}')">
+          ${(ocart[m.id]||0)>0?`ในตะกร้า (${ocart[m.id]})`:'+ เพิ่มใส่ตะกร้า'}
+        </button>
+      </div>
+    </div>`).join('');
+  const cnt=Object.values(ocart).reduce((s,v)=>s+v,0);
+  const btn=$('shop-cart-btn');
+  $('shop-cart-cnt').textContent=cnt;
+  btn.style.display=cnt>0?'flex':'none';
+}
+window.addOCart=function(id){
+  const m=MENU.find(x=>x.id===id); if(!m||m.stock<=0) return;
+  if((ocart[id]||0)>=m.stock){toast('สต๊อกไม่พอ');return;}
+  ocart[id]=(ocart[id]||0)+1; renderShopPublic();
+};
+function ocartTotal(delivery){
+  const sub=Object.entries(ocart).reduce((s,[id,q])=>{const m=MENU.find(x=>x.id===id);return s+(m?m.price*q:0);},0);
+  return sub+(delivery?30:0);
+}
+function openShopCart(){ renderShopCartDrawer(); $('shop-drw').classList.add('on'); }
+window.closeShopCart=function(){ $('shop-drw').classList.remove('on'); };
+window.openShopCart=openShopCart;
+function renderShopCartDrawer(){
+  const entries=Object.entries(ocart);
+  const delivery=$('oc-type')?.value==='delivery';
+  $('shop-cart-items').innerHTML=entries.map(([id,q])=>{
+    const m=MENU.find(x=>x.id===id);if(!m)return'';
+    return`<div class="crow"><div class="cnm">${m.name}</div><div class="qc">
+      <button class="qb" onclick="chgOQ('${id}',-1)">−</button>
+      <span class="qn">${q}</span>
+      <button class="qb" onclick="chgOQ('${id}',1)">+</button>
+    </div><div class="cpr">฿${fmt(m.price*q)}</div></div>`;}).join('');
+  $('shop-cart-sum').innerHTML=`<div class="sumrow tot"><span>ยอดรวม</span><span>฿${fmt(ocartTotal(delivery))}</span></div>`;
+}
+window.chgOQ=function(id,d){
+  ocart[id]=(ocart[id]||0)+d;
+  if(ocart[id]<=0) delete ocart[id];
+  renderShopPublic(); renderShopCartDrawer();
+};
+// toggle delivery field
+document.addEventListener('change', e=>{
+  if(e.target.id==='oc-type'){
+    $('oc-addr-wrap').style.display=e.target.value==='delivery'?'':'none';
+    renderShopCartDrawer();
+  }
+});
+window.placeOrder=async function(){
+  const name=$('oc-name').value.trim();
+  const phone=$('oc-phone').value.trim();
+  const type=$('oc-type').value;
+  const addr=$('oc-addr')?.value.trim();
+  if(!name||!phone){toast('กรุณากรอกชื่อและเบอร์');return;}
+  if(type==='delivery'&&!addr){toast('กรุณากรอกที่อยู่จัดส่ง');return;}
+  if(!Object.keys(ocart).length){toast('ตะกร้าว่าง');return;}
+  const items=Object.entries(ocart).map(([id,q])=>{const m=MENU.find(x=>x.id===id);return{menuId:id,name:m.name,qty:q,price:m.price};});
+  const sub=items.reduce((s,i)=>s+i.price*i.qty,0);
+  await addDoc(collection(db,'orders'),{
+    customerName:name, customerPhone:phone,
+    type, address:addr||'', items,
+    subtotal:sub, delivery:type==='delivery'?30:0,
+    total:sub+(type==='delivery'?30:0),
+    status:'pending', createdAt:serverTimestamp()
+  });
+  // deduct stock
+  for(const [id,q] of Object.entries(ocart)){
+    await updateDoc(doc(db,'menu',id),{stock:increment(-q)});
+  }
+  ocart={};
+  $('shop-drw').classList.remove('on');
+  renderShopPublic();
+  toast('✓ สั่งซื้อสำเร็จ! ร้านจะติดต่อกลับ');
+  $('oc-name').value=''; $('oc-phone').value='';
+};
+
+// ── ORDERS (owner) ────────────────────────────────────────────────
+function renderOrdersPage(){
+  const sp=$('sp-orders'); if(!sp) return;
+  const pending=ORDERS.filter(o=>o.status==='pending');
+  const done=ORDERS.filter(o=>o.status!=='pending');
+  sp.innerHTML=`
+    <div class="stats" style="margin-bottom:14px">
+      <div class="stat"><div class="stat-l">ออเดอร์รอดำเนินการ</div><div class="stat-v" style="color:var(--red)">${pending.length}</div></div>
+      <div class="stat"><div class="stat-l">ยอดรวมออนไลน์วันนี้</div><div class="stat-v">฿${fmt(ORDERS.reduce((s,o)=>s+o.total,0))}</div></div>
+    </div>
+    ${pending.length?`<div class="sec">รอดำเนินการ (${pending.length})</div>
+    ${pending.map(o=>renderOrderCard(o,true)).join('')}`:''}
+    ${done.length?`<div class="sec" style="margin-top:8px">เสร็จแล้ว</div>
+    ${done.slice(0,10).map(o=>renderOrderCard(o,false)).join('')}`:''}
+    ${!ORDERS.length?'<div style="text-align:center;padding:30px;color:#bbb;font-size:13px">ยังไม่มีออเดอร์ออนไลน์</div>':''}`;
+}
+function renderOrderCard(o,showActions){
+  const statusLbl={pending:'รอดำเนินการ',confirmed:'ยืนยันแล้ว',preparing:'กำลังเตรียม',ready:'พร้อมส่ง/รับ',done:'เสร็จสิ้น',cancelled:'ยกเลิก'};
+  const statusBdg={pending:'bdg-lo',confirmed:'bdg-bl',preparing:'bdg-bl',ready:'bdg-ok',done:'bdg-ok',cancelled:'bdg-out'};
+  const t=o.createdAt?.toDate?.()?.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})||'';
+  return`<div class="ordcard">
+    <div class="ord-h">
+      <div>
+        <div class="ord-id">${o.customerName} · ${o.customerPhone}</div>
+        <div class="ord-t">${o.type==='delivery'?'🛵 จัดส่ง':'🏪 รับหน้าร้าน'} · ${t}</div>
+      </div>
+      <span class="bdg ${statusBdg[o.status]||'bdg-lo'}">${statusLbl[o.status]||o.status}</span>
+    </div>
+    <div class="ord-items">${o.items.map(i=>`${i.name}×${i.qty}`).join(' · ')}</div>
+    ${o.address?`<div style="font-size:11px;color:#888;margin-bottom:6px">📍 ${o.address}</div>`:''}
+    <div class="ord-footer">
+      <div class="ord-total">฿${fmt(o.total)}</div>
+      ${showActions?`<div style="display:flex;gap:6px">
+        <button class="btn btn-r btn-sm" onclick="updOrder('${o.id}','confirmed')">รับออเดอร์</button>
+        <button class="btn btn-g btn-sm" onclick="updOrder('${o.id}','done')">เสร็จ</button>
+        <button class="btn btn-g btn-sm" onclick="updOrder('${o.id}','cancelled')">ยกเลิก</button>
+      </div>`:`<button class="btn btn-g btn-sm" onclick="updOrder('${o.id}','pending')">เปิดใหม่</button>`}
+    </div>
+  </div>`;
+}
+window.updOrder=async function(id,status){
+  await updateDoc(doc(db,'orders',id),{status});
+  toast('อัปเดตสถานะแล้ว');
+};
+
+// ── OWNER PANEL ───────────────────────────────────────────────────
+function renderOwner(){
+  const sp=$('sp-owner'); if(!sp) return;
+  sp.innerHTML=`
+    <div style="display:flex;gap:7px;overflow-x:auto;margin-bottom:14px;scrollbar-width:none">
+      ${['ranking','incentive','staff','settings'].map(t=>`
+        <button class="ctab${ownerTab===t?' on':''}" onclick="setOwnerTab('${t}')">${
+          t==='ranking'?'Ranking':t==='incentive'?'อินเซนทีฟ':t==='staff'?'พนักงาน':'ตั้งค่า'
+        }</button>`).join('')}
+    </div>
+    <div id="owner-sub"></div>`;
+  renderOwnerSub();
+}
+window.setOwnerTab=function(t){ ownerTab=t; renderOwner(); };
+function renderOwnerSub(){
+  const el=$('owner-sub'); if(!el) return;
+  if(ownerTab==='ranking'){
+    const ranked=[...STAFF.filter(s=>s.role!=='owner')].map(s=>{
+      const sales=SALES.filter(x=>x.staffId===s.id).reduce((t,b)=>t+b.total,0);
+      return{...s,sales};
+    }).sort((a,b)=>b.sales-a.sales);
+    const maxS=ranked[0]?.sales||1;
+    const totSales=ranked.reduce((s,x)=>s+x.sales,0);
+    el.innerHTML=`
+      <div class="stats">
+        <div class="stat"><div class="stat-l">ยอดรวมวันนี้</div><div class="stat-v" style="color:var(--red)">฿${fmt(totSales)}</div></div>
+        <div class="stat"><div class="stat-l">พนักงาน</div><div class="stat-v">${STAFF.filter(s=>s.active&&s.role!=='owner').length} คน</div></div>
+      </div>
+      ${ranked.map((s,i)=>{
+        const inc=Math.round(s.sales*(s.incRate||0)/100);
+        return`<div class="lbitem">
+          <div class="lbrank">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</div>
+          <div class="lbav" style="background:${s.color}">${initials(s.name)}</div>
+          <div style="flex:1">
+            <div class="lbnm">${s.name}</div>
+            <div class="lbmeta">${SALES.filter(x=>x.staffId===s.id).length} บิล</div>
+            <div class="pbar"><div class="pfill" style="width:${Math.round(s.sales/maxS*100)}%;background:var(--red)"></div></div>
+          </div>
+          <div class="lbright"><div class="lbsales">฿${fmt(s.sales)}</div><div class="lbinc">inc ฿${fmt(inc)}</div></div>
+        </div>`;}).join('')}`;
+  } else if(ownerTab==='incentive'){
+    const staffWithSales=STAFF.filter(s=>s.role!=='owner').map(s=>{
+      const sales=SALES.filter(x=>x.staffId===s.id).reduce((t,b)=>t+b.total,0);
+      const inc=Math.round(sales*(s.incRate||0)/100);
+      return{...s,sales,inc};
+    });
+    const totalInc=staffWithSales.reduce((s,x)=>s+x.inc,0);
+    el.innerHTML=`
+      <div class="card" style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><div style="font-size:12px;color:#888">อินเซนทีฟรวมที่ต้องจ่าย</div><div style="font-size:24px;font-weight:700;color:var(--red)">฿${fmt(totalInc)}</div></div>
+          <button class="btn btn-r btn-sm" onclick="toast('✓ อนุมัติจ่ายอินเซนทีฟ ฿${fmt(totalInc)} แล้ว')">อนุมัติจ่าย</button>
+        </div>
+      </div>
+      ${staffWithSales.map(s=>`
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div class="lbav" style="background:${s.color}">${initials(s.name)}</div>
+              <div><div style="font-size:13px;font-weight:700">${s.name}</div><div style="font-size:11px;color:#aaa">฿${fmt(s.sales)}</div></div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:15px;font-weight:700;color:var(--red)">฿${fmt(s.inc)}</div>
+              <div style="display:flex;align-items:center;gap:4px;margin-top:3px">
+                <input style="width:50px;padding:4px 6px;border:1.5px solid #ddd;border-radius:6px;font-size:12px;text-align:center" type="number" value="${s.incRate||0}" step="0.5" min="0" max="20" onchange="updIncRate('${s.id}',this.value)">
+                <span style="font-size:12px;color:#888">%</span>
+              </div>
+            </div>
+          </div>
+        </div>`).join('')}`;
+  } else if(ownerTab==='staff'){
+    el.innerHTML=`
+      <div style="text-align:right;margin-bottom:10px">
+        <button class="btn btn-r btn-sm" onclick="openModal('staff-modal')"><i class="ti ti-plus" aria-hidden="true"></i> เพิ่มพนักงาน</button>
+      </div>
+      ${STAFF.filter(s=>s.role!=='owner').map(s=>`
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div class="lbav" style="background:${s.color}">${initials(s.name)}</div>
+              <div>
+                <div style="font-size:13px;font-weight:700">${s.name} <span class="bdg ${s.active?'bdg-ok':'bdg-out'}">${s.active?'ทำงาน':'หยุด'}</span></div>
+                <div style="font-size:11px;color:#aaa;font-family:monospace">PIN: ${s.pin} · ${s.incRate||0}%</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-g btn-sm" onclick="toggleStaff('${s.id}',${!s.active})">${s.active?'หยุด':'เปิด'}</button>
+            </div>
+          </div>
+        </div>`).join('')}`;
+  } else if(ownerTab==='settings'){
+    el.innerHTML=`
+      <div class="card">
+        ${[
+          {lbl:'เป้ายอดขาย/วัน (฿)',val:incTarget,fn:`updSetting('target',this.value)`},
+        ].map(s=>`
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #f0f0ec">
+            <div style="font-size:13px;font-weight:600">${s.lbl}</div>
+            <input style="width:90px;padding:7px 10px;border:1.5px solid #ddd;border-radius:var(--rs);font-size:14px;font-weight:700;text-align:center" value="${s.val}" onchange="${s.fn}">
+          </div>`).join('')}
+        <div style="padding-top:12px;font-size:12px;color:#888">PIN เจ้าของ: ตั้งค่าใน Firebase Console → Firestore → staff/owner → pin</div>
+      </div>`;
+  }
+}
+window.updIncRate=async function(id,v){
+  await updateDoc(doc(db,'staff',id),{incRate:parseFloat(v)||0});
+  toast('อัปเดตอัตราแล้ว');
+};
+window.toggleStaff=async function(id,active){
+  await updateDoc(doc(db,'staff',id),{active});
+  toast(`${active?'เปิด':'หยุด'}การใช้งานแล้ว`);
+};
+window.updSetting=function(key,val){
+  if(key==='target') incTarget=parseInt(val)||5000;
+  toast('บันทึกแล้ว');
+};
+window.saveStaff=async function(){
+  const name=$('sm-name').value.trim();
+  const pin=String($('sm-pin').value).padStart(4,'0').slice(0,4);
+  const rate=parseFloat($('sm-rate').value)||0;
+  if(!name||pin.length<4){toast('กรอกข้อมูลให้ครบ');return;}
+  if(STAFF.find(s=>s.pin===pin)){toast('PIN นี้มีอยู่แล้ว');return;}
+  await addDoc(collection(db,'staff'),{
+    name, pin, role:'staff',
+    color:COLORS[STAFF.length%COLORS.length],
+    active:true, incRate:rate
+  });
+  closeModal('staff-modal'); toast(`เพิ่ม ${name} แล้ว`);
+};
+
+// ── PAYMENT SYSTEM ────────────────────────────────────────────────
+let curPayMethod='qr';
+let curPayOrderId=null;
+let curPayTotal=0;
+let slipDataUrl=null;
+let selectedBank=null;
+
+function openPayModal(orderId, total){
+  curPayOrderId=orderId; curPayTotal=total; slipDataUrl=null; selectedBank=null;
+  goPayStep(1);
+  $('pay-modal').classList.add('on');
+}
+function closePayModal(){ $('pay-modal').classList.remove('on'); }
+window.closePayModal=closePayModal;
+window.openPayModal=openPayModal;
+
+function goPayStep(n){
+  [1,2,3].forEach(i=>{
+    $('pay-s'+i).style.display=i===n?'':'none';
+  });
+  renderPaySteps(n);
+  if(n===1){ renderQR(); renderBankList(); }
+}
+window.goPayStep=goPayStep;
+
+function renderPaySteps(cur){
+  const steps=['เลือกวิธีชำระ','แนบสลิป','รอยืนยัน'];
+  $('pay-steps').innerHTML=steps.map((s,i)=>{
+    const n=i+1;
+    const cls=n<cur?'pstep done':n===cur?'pstep on':'pstep';
+    const dot=n<cur?'✓':n;
+    return`<div class="${cls}" style="position:relative">
+      <div class="pstep-dot">${dot}</div>
+      <div>${s}</div>
+      ${n<steps.length?`<div class="pstep-line"></div>`:''}
+    </div>`;
+  }).join('');
+  const tot=curPayTotal||0;
+  $('pay-total-disp').innerHTML=`<div style="font-size:12px;color:#888;margin-bottom:4px">ยอดที่ต้องชำระ</div><div style="font-size:28px;font-weight:700;color:var(--red)">฿${fmt(tot)}</div>`;
+}
+
+function setPayTab(tab){
+  curPayMethod=tab;
+  $('pmt-qr').classList.toggle('on',tab==='qr');
+  $('pmt-bank').classList.toggle('on',tab==='bank');
+  $('qr-section').style.display=tab==='qr'?'':'none';
+  $('bank-section').style.display=tab==='bank'?'':'none';
+}
+window.setPayTab=setPayTab;
+
+function renderQR(){
+  const pp=PAYMENT_CONFIG.promptpay_number.replace(/-/g,'');
+  const amt=curPayTotal||0;
+  $('qr-amount-disp').textContent=`฿${fmt(amt)}`;
+  $('qr-pp-name').textContent=PAYMENT_CONFIG.promptpay_name;
+  $('qr-pp-num').textContent=PAYMENT_CONFIG.promptpay_number;
+  // Generate QR via PromptPay QR standard using qr-code library
+  const payload=buildPromptPayPayload(pp, amt);
+  const wrap=$('qr-img-wrap');
+  // Use public QR API (goqr.me) — works offline via img src
+  const encoded=encodeURIComponent(payload);
+  wrap.innerHTML=`<img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encoded}" alt="QR PromptPay" style="width:176px;height:176px;border-radius:6px" onerror="this.parentElement.innerHTML='<div style=padding:20px;color:#aaa;font-size:12px>ต้องใช้อินเทอร์เน็ต<br>เพื่อสร้าง QR Code</div>'">`;
+}
+
+function buildPromptPayPayload(phone, amount){
+  // PromptPay EMV QR Code format (simplified)
+  function tag(id, val){ const l=val.length.toString().padStart(2,'0'); return id+l+val; }
+  const ppid=phone.length===13?'00'+tag('01',phone):'00'+tag('01','0066'+phone.slice(1));
+  const merchant=tag('00','A000000677010111')+ppid;
+  let payload=tag('00','01')+tag('01','12')+tag('29',merchant)+tag('53','764');
+  if(amount>0){
+    const a=amount.toFixed(2);
+    payload+=tag('54',a);
+  }
+  payload+=tag('58','TH')+tag('59','N/A')+tag('60','Bangkok');
+  payload+='6304';
+  // CRC16 (simplified — good enough for QR image services)
+  payload+=crc16(payload).toString(16).toUpperCase().padStart(4,'0');
+  return payload;
+}
+
+function crc16(str){
+  let crc=0xFFFF;
+  for(let i=0;i<str.length;i++){
+    crc^=str.charCodeAt(i)<<8;
+    for(let j=0;j<8;j++) crc=(crc&0x8000)?(crc<<1)^0x1021:(crc<<1);
+  }
+  return crc&0xFFFF;
+}
+
+function renderBankList(){
+  const list=$('bank-list'); if(!list) return;
+  const icons={'กสิกรไทย':'💚','ไทยพาณิชย์':'💜','กรุงเทพ':'💙','กรุงไทย':'🔵','ทหารไทยธนชาต':'🟠','ออมสิน':'🟡'};
+  list.innerHTML=PAYMENT_CONFIG.bank_accounts.map((b,i)=>`
+    <div class="bank-opt" id="bank-opt-${i}" onclick="selectBank(${i})">
+      <div class="bank-logo">${icons[b.bank]||'🏦'}</div>
+      <div class="bank-details">
+        <div class="bd-bank">${b.bank}</div>
+        <div class="bd-no">${b.number}</div>
+        <div class="bd-name">${b.name}</div>
+      </div>
+      <i class="ti ti-chevron-right" style="margin-left:auto;color:#ddd" aria-hidden="true"></i>
+    </div>`).join('');
+}
+window.selectBank=function(i){
+  selectedBank=i;
+  document.querySelectorAll('.bank-opt').forEach((el,idx)=>el.classList.toggle('sel',idx===i));
+  const b=PAYMENT_CONFIG.bank_accounts[i];
+  $('bank-detail-box').style.display='';
+  $('bank-selected-name').textContent=b.bank;
+  $('bank-selected-no').textContent=b.number;
+  $('bank-selected-acct').textContent='ชื่อบัญชี: '+b.name;
+};
+window.copyPP=function(){
+  navigator.clipboard?.writeText(PAYMENT_CONFIG.promptpay_number)
+    .then(()=>toast('คัดลอกเบอร์ PromptPay แล้ว'))
+    .catch(()=>toast(PAYMENT_CONFIG.promptpay_number));
+};
+window.copyBankNo=function(){
+  if(selectedBank===null){toast('เลือกบัญชีก่อน');return;}
+  const no=PAYMENT_CONFIG.bank_accounts[selectedBank].number;
+  navigator.clipboard?.writeText(no).then(()=>toast('คัดลอกเลขบัญชีแล้ว')).catch(()=>toast(no));
+};
+
+window.handleSlip=function(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    slipDataUrl=e.target.result;
+    $('slip-img-preview').src=slipDataUrl;
+    $('slip-img-preview').style.display='block';
+    $('slip-placeholder').style.display='none';
+    $('slip-zone').classList.add('has-img');
+  };
+  reader.readAsDataURL(file);
+};
+
+window.submitSlip=async function(){
+  if(!slipDataUrl){toast('กรุณาแนบสลิปก่อน');return;}
+  const btn=$('slip-submit-btn');
+  btn.textContent='กำลังส่ง...'; btn.disabled=true;
+  try {
+    const note=$('slip-note').value.trim();
+    await updateDoc(doc(db,'orders',curPayOrderId),{
+      status:'slip_submitted',
+      slipImage: slipDataUrl.substring(0,5000), // store first 5KB preview
+      slipNote: note,
+      payMethod: curPayMethod==='qr'?'promptpay':'bank_transfer',
+      paidAt: serverTimestamp()
+    });
+    // show summary
+    const ord=ORDERS.find(o=>o.id===curPayOrderId);
+    $('pay-order-summary').innerHTML=ord?`
+      <div style="font-weight:700;margin-bottom:6px">สรุปออเดอร์</div>
+      <div>${ord.items.map(i=>`${i.name} ×${i.qty}`).join(' · ')}</div>
+      <div style="margin-top:6px;font-size:15px;font-weight:700;color:var(--red)">ยอดรวม ฿${fmt(ord.total)}</div>
+      <div style="font-size:11px;color:#888;margin-top:4px">ชำระโดย: ${curPayMethod==='qr'?'QR PromptPay':'โอนบัญชีธนาคาร'}</div>`:'';
+    goPayStep(3);
+  } catch(e){ toast('เกิดข้อผิดพลาด: '+e.message); }
+  btn.textContent='ส่งหลักฐานการชำระเงิน'; btn.disabled=false;
+};
+
+// ── UPDATE placeOrder to open payment modal ────────────────────────
+window.placeOrder=async function(){
+  const name=$('oc-name').value.trim();
+  const phone=$('oc-phone').value.trim();
+  const type=$('oc-type').value;
+  const addr=$('oc-addr')?.value.trim();
+  if(!name||!phone){toast('กรุณากรอกชื่อและเบอร์');return;}
+  if(type==='delivery'&&!addr){toast('กรุณากรอกที่อยู่จัดส่ง');return;}
+  if(!Object.keys(ocart).length){toast('ตะกร้าว่าง');return;}
+  const items=Object.entries(ocart).map(([id,q])=>{const m=MENU.find(x=>x.id===id);return{menuId:id,name:m.name,qty:q,price:m.price};});
+  const sub=items.reduce((s,i)=>s+i.price*i.qty,0);
+  const total=sub+(type==='delivery'?30:0);
+  const ref=await addDoc(collection(db,'orders'),{
+    customerName:name,customerPhone:phone,type,address:addr||'',items,
+    subtotal:sub,delivery:type==='delivery'?30:0,total,
+    status:'pending_payment',createdAt:serverTimestamp()
+  });
+  for(const [id,q] of Object.entries(ocart)) await updateDoc(doc(db,'menu',id),{stock:increment(-q)});
+  ocart={};
+  closeShopCart(); renderShopPublic();
+  $('oc-name').value=''; $('oc-phone').value='';
+  // open payment modal
+  openPayModal(ref.id, total);
+};
+
+// ── UPDATE order card to show slip status + verify button ─────────
+function renderOrderCard(o,showActions){
+  const statusLbl={
+    pending:'รอดำเนินการ',pending_payment:'รอชำระเงิน',
+    slip_submitted:'รอตรวจสลิป',confirmed:'ยืนยันแล้ว',
+    preparing:'กำลังเตรียม',ready:'พร้อมส่ง/รับ',
+    done:'เสร็จสิ้น',cancelled:'ยกเลิก'
+  };
+  const statusBdg={
+    pending:'bdg-lo',pending_payment:'bdg-out',slip_submitted:'bdg-bl',
+    confirmed:'bdg-bl',preparing:'bdg-bl',ready:'bdg-ok',done:'bdg-ok',cancelled:'bdg-out'
+  };
+  const t=o.createdAt?.toDate?.()?.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})||'';
+  const slipBtn=o.status==='slip_submitted'&&showActions
+    ?`<button class="btn btn-r btn-sm" onclick="verifySlip('${o.id}')">✓ ยืนยันรับเงิน</button>`:
+    o.status==='pending_payment'&&!showActions?`<button class="btn btn-r btn-sm" onclick="openPayModal('${o.id}',${o.total})">ชำระเงิน</button>`:'';
+  return`<div class="ordcard">
+    <div class="ord-h">
+      <div>
+        <div class="ord-id">${o.customerName} · ${o.customerPhone}</div>
+        <div class="ord-t">${o.type==='delivery'?'🛵 จัดส่ง':'🏪 รับหน้าร้าน'} · ${t}</div>
+      </div>
+      <span class="bdg ${statusBdg[o.status]||'bdg-lo'}">${statusLbl[o.status]||o.status}</span>
+    </div>
+    <div class="ord-items">${o.items.map(i=>`${i.name}×${i.qty}`).join(' · ')}</div>
+    ${o.address?`<div style="font-size:11px;color:#888;margin-bottom:6px">📍 ${o.address}</div>`:''}
+    ${o.slipImage?`<div style="font-size:11px;color:var(--green);margin-bottom:6px">📎 มีสลิปแนบ${o.slipNote?' · '+o.slipNote:''}</div>`:''}
+    <div class="ord-footer">
+      <div class="ord-total">฿${fmt(o.total)}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${slipBtn}
+        ${showActions&&o.status!=='slip_submitted'?`<button class="btn btn-r btn-sm" onclick="updOrder('${o.id}','confirmed')">รับออเดอร์</button>`:''}
+        ${showActions?`<button class="btn btn-g btn-sm" onclick="updOrder('${o.id}','done')">เสร็จ</button>
+          <button class="btn btn-g btn-sm" onclick="updOrder('${o.id}','cancelled')">ยกเลิก</button>`:''}
+      </div>
+    </div>
+  </div>`;
+}
+window.verifySlip=async function(id){
+  await updateDoc(doc(db,'orders',id),{status:'confirmed',verifiedAt:serverTimestamp()});
+  toast('✓ ยืนยันรับเงินแล้ว ออเดอร์เปลี่ยนเป็น "ยืนยันแล้ว"');
+};
+
+// ── TRIAL BANNER in shop page ─────────────────────────────────────
+function renderTrialBanner(){
+  const days=PAYMENT_CONFIG.trial_days;
+  return`<div class="trial-banner">
+    <div class="trial-days-big">${days}</div>
+    <div class="trial-txt">
+      <div class="t1">วัน ทดลองใช้ฟรี!</div>
+      <div class="t2">ไม่ต้องใช้บัตรเครดิต · เริ่มใช้งานได้ทันที<br>ครบ ${days} วันค่อยตัดสินใจสมัครต่อ</div>
+    </div>
+  </div>`;
+}
+
+// patch renderShop to include trial banner
+const _origRenderShop = renderShop;
+function renderShop(){
+  const sp=$('sp-shop'); if(!sp) return;
+  const onlineMenu=MENU.filter(m=>m.online);
+  sp.innerHTML=renderTrialBanner()+`
+    <div class="card" style="margin-bottom:12px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:4px">ลิงก์ร้านออนไลน์สาธารณะ</div>
+      <div style="font-size:12px;color:#888;margin-bottom:8px">ส่งลิงก์นี้ให้ลูกค้าสั่งออนไลน์</div>
+      <div style="background:#f5f5f0;border-radius:var(--rs);padding:10px;font-size:12px;font-family:monospace;word-break:break-all;margin-bottom:8px">${location.href.split('#')[0]}#shop</div>
+      <button class="btn btn-o btn-sm" onclick="copyShopLink()"><i class="ti ti-copy" aria-hidden="true"></i> คัดลอกลิงก์</button>
+    </div>
+    <div class="sec">สินค้าออนไลน์ (${onlineMenu.length} รายการ)</div>
+    <div class="pgrid">
+      ${onlineMenu.map(m=>`
+        <div class="pcard">
+          <div class="pimg">${m.emoji}</div>
+          <div class="pinfo">
+            <div class="pnm">${m.name}</div>
+            <div class="ppr">฿${fmt(m.price)}</div>
+            <div class="pst">${m.stock>0?`คงเหลือ ${m.stock}`:'หมด'}</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+setInterval(()=>{ const e=$('tb-time'); if(e) e.textContent=now(); }, 1000);
+
+// ── HASH ROUTING (ลิงก์ร้านออนไลน์) ──────────────────────────────
+function handleHash(){
+  if(location.hash==='#shop') showPage('shop');
+}
+window.addEventListener('hashchange', handleHash);
+
+// ── INIT ──────────────────────────────────────────────────────────
+async function init(){
+  setLoad(true,'กำลังเชื่อมต่อ Firebase...');
+  try {
+    await seedMenuIfEmpty();
+    startListeners();
+    setLoad(false);
+    handleHash();
+    if(location.hash!=='#shop') showPage('login');
+  } catch(e){
+    $('load-txt').textContent='เชื่อมต่อไม่ได้ — ตรวจสอบ Firebase Config';
+    console.error(e);
+  }
+}
+
+// PWA service worker
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+init();
+window.openModal=openModal;
+window.closeModal=closeModal;
+window.closePin=closePin;
+</script>
+</body>
+</html>
